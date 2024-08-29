@@ -20,12 +20,10 @@
 
 */
 
-/* jshint esversion:11 */
+/* eslint-disable indent */
 /* global cloneInto */
 
-'use strict';
-
-// ruleset: fra-0
+// ruleset: irn-0
 
 /******************************************************************************/
 
@@ -38,13 +36,13 @@
 /******************************************************************************/
 
 // Start of code to inject
-const uBOL_removeNodeText = function() {
+const uBOL_noSetTimeoutIf = function() {
 
-const scriptletGlobals = {}; // jshint ignore: line
+const scriptletGlobals = {}; // eslint-disable-line
 
-const argsList = [["script","/ApoZow|'(map'|\\/imgs\\/|ads?-\\d+|ad-img-slot|ad_inview_area|div-leader-ad)|\\['style'\\]\\['display'\\]|\\.length;var|\\.substr\\(0|\\.reduce\\(\\(acc, curr\\)|g1hnttodBEe8apl|_adbn_|adheader|\\\"\\/00|DklzSoz|Countdown|mpl=kdel|String.fromCharCode\\(127\\)|\\\"getComputedStyle\\\"|newImg|interstitial|&utm_medium/"]];
+const argsList = [["updateAdContents"]];
 
-const hostnamesMap = new Map([["japscan.lol",0]]);
+const hostnamesMap = new Map([["targoman.ir",0]]);
 
 const entitiesMap = new Map([]);
 
@@ -52,149 +50,82 @@ const exceptionsMap = new Map([]);
 
 /******************************************************************************/
 
-function removeNodeText(
-    nodeName,
-    includes,
-    ...extraArgs
+function noSetTimeoutIf(
+    needle = '',
+    delay = ''
 ) {
-    replaceNodeTextFn(nodeName, '', '', 'includes', includes || '', ...extraArgs);
+    if ( typeof needle !== 'string' ) { return; }
+    const safe = safeSelf();
+    const logPrefix = safe.makeLogPrefix('prevent-setTimeout', needle, delay);
+    const needleNot = needle.charAt(0) === '!';
+    if ( needleNot ) { needle = needle.slice(1); }
+    if ( delay === '' ) { delay = undefined; }
+    let delayNot = false;
+    if ( delay !== undefined ) {
+        delayNot = delay.charAt(0) === '!';
+        if ( delayNot ) { delay = delay.slice(1); }
+        delay = parseInt(delay, 10);
+    }
+    const reNeedle = safe.patternToRegex(needle);
+    proxyApplyFn('setTimeout', function setTimeout(target, thisArg, args) {
+        const a = args[0] instanceof Function
+            ? String(safe.Function_toString(args[0]))
+            : String(args[0]);
+        const b = args[1];
+        if ( needle === '' && delay === undefined ) {
+            safe.uboLog(logPrefix, `Called:\n${a}\n${b}`);
+            return Reflect.apply(target, thisArg, args);
+        }
+        let defuse;
+        if ( needle !== '' ) {
+            defuse = reNeedle.test(a) !== needleNot;
+        }
+        if ( defuse !== false && delay !== undefined ) {
+            defuse = (b === delay || isNaN(b) && isNaN(delay) ) !== delayNot;
+        }
+        if ( defuse ) {
+            args[0] = function(){};
+            safe.uboLog(logPrefix, `Prevented:\n${a}\n${b}`);
+        }
+        return Reflect.apply(target, thisArg, args);
+    });
 }
 
-function replaceNodeTextFn(
-    nodeName = '',
-    pattern = '',
-    replacement = ''
+function proxyApplyFn(
+    target = '',
+    handler = ''
 ) {
-    const safe = safeSelf();
-    const logPrefix = safe.makeLogPrefix('replace-node-text.fn', ...Array.from(arguments));
-    const reNodeName = safe.patternToRegex(nodeName, 'i', true);
-    const rePattern = safe.patternToRegex(pattern, 'gms');
-    const extraArgs = safe.getExtraArgs(Array.from(arguments), 3);
-    const reIncludes = extraArgs.includes || extraArgs.condition
-        ? safe.patternToRegex(extraArgs.includes || extraArgs.condition, 'ms')
-        : null;
-    const reExcludes = extraArgs.excludes
-        ? safe.patternToRegex(extraArgs.excludes, 'ms')
-        : null;
-    const stop = (takeRecord = true) => {
-        if ( takeRecord ) {
-            handleMutations(observer.takeRecords());
-        }
-        observer.disconnect();
-        if ( safe.logLevel > 1 ) {
-            safe.uboLog(logPrefix, 'Quitting');
-        }
-    };
-    const textContentFactory = (( ) => {
-        const out = { createScript: s => s };
-        const { trustedTypes: tt } = self;
-        if ( tt instanceof Object ) {
-            if ( typeof tt.getPropertyType === 'function' ) {
-                if ( tt.getPropertyType('script', 'textContent') === 'TrustedScript' ) {
-                    return tt.createPolicy(getRandomToken(), out);
-                }
-            }
-        }
-        return out;
-    })();
-    let sedCount = extraArgs.sedCount || 0;
-    const handleNode = node => {
-        const before = node.textContent;
-        if ( reIncludes ) {
-            reIncludes.lastIndex = 0;
-            if ( safe.RegExp_test.call(reIncludes, before) === false ) { return true; }
-        }
-        if ( reExcludes ) {
-            reExcludes.lastIndex = 0;
-            if ( safe.RegExp_test.call(reExcludes, before) ) { return true; }
-        }
-        rePattern.lastIndex = 0;
-        if ( safe.RegExp_test.call(rePattern, before) === false ) { return true; }
-        rePattern.lastIndex = 0;
-        const after = pattern !== ''
-            ? before.replace(rePattern, replacement)
-            : replacement;
-        node.textContent = node.nodeName === 'SCRIPT'
-            ? textContentFactory.createScript(after)
-            : after;
-        if ( safe.logLevel > 1 ) {
-            safe.uboLog(logPrefix, `Text before:\n${before.trim()}`);
-        }
-        safe.uboLog(logPrefix, `Text after:\n${after.trim()}`);
-        return sedCount === 0 || (sedCount -= 1) !== 0;
-    };
-    const handleMutations = mutations => {
-        for ( const mutation of mutations ) {
-            for ( const node of mutation.addedNodes ) {
-                if ( reNodeName.test(node.nodeName) === false ) { continue; }
-                if ( handleNode(node) ) { continue; }
-                stop(false); return;
-            }
-        }
-    };
-    const observer = new MutationObserver(handleMutations);
-    observer.observe(document, { childList: true, subtree: true });
-    if ( document.documentElement ) {
-        const treeWalker = document.createTreeWalker(
-            document.documentElement,
-            NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT
-        );
-        let count = 0;
-        for (;;) {
-            const node = treeWalker.nextNode();
-            count += 1;
-            if ( node === null ) { break; }
-            if ( reNodeName.test(node.nodeName) === false ) { continue; }
-            if ( node === document.currentScript ) { continue; }
-            if ( handleNode(node) ) { continue; }
-            stop(); break;
-        }
-        safe.uboLog(logPrefix, `${count} nodes present before installing mutation observer`);
+    let context = globalThis;
+    let prop = target;
+    for (;;) {
+        const pos = prop.indexOf('.');
+        if ( pos === -1 ) { break; }
+        context = context[prop.slice(0, pos)];
+        if ( context instanceof Object === false ) { return; }
+        prop = prop.slice(pos+1);
     }
-    if ( extraArgs.stay ) { return; }
-    runAt(( ) => {
-        const quitAfter = extraArgs.quitAfter || 0;
-        if ( quitAfter !== 0 ) {
-            setTimeout(( ) => { stop(); }, quitAfter);
-        } else {
-            stop();
-        }
-    }, 'interactive');
-}
-
-function getRandomToken() {
-    const safe = safeSelf();
-    return safe.String_fromCharCode(Date.now() % 26 + 97) +
-        safe.Math_floor(safe.Math_random() * 982451653 + 982451653).toString(36);
-}
-
-function runAt(fn, when) {
-    const intFromReadyState = state => {
-        const targets = {
-            'loading': 1,
-            'interactive': 2, 'end': 2, '2': 2,
-            'complete': 3, 'idle': 3, '3': 3,
-        };
-        const tokens = Array.isArray(state) ? state : [ state ];
-        for ( const token of tokens ) {
-            const prop = `${token}`;
-            if ( targets.hasOwnProperty(prop) === false ) { continue; }
-            return targets[prop];
-        }
-        return 0;
-    };
-    const runAt = intFromReadyState(when);
-    if ( intFromReadyState(document.readyState) >= runAt ) {
-        fn(); return;
+    const fn = context[prop];
+    if ( typeof fn !== 'function' ) { return; }
+    const fnStr = fn.toString();
+    const toString = (function toString() { return fnStr; }).bind(null);
+    if ( fn.prototype && fn.prototype.constructor === fn ) {
+        context[prop] = new Proxy(fn, {
+            construct: handler,
+            get(target, prop, receiver) {
+                if ( prop === 'toString' ) { return toString; }
+                return Reflect.get(target, prop, receiver);
+            },
+        });
+        return (...args) => Reflect.construct(...args);
     }
-    const onStateChange = ( ) => {
-        if ( intFromReadyState(document.readyState) < runAt ) { return; }
-        fn();
-        safe.removeEventListener.apply(document, args);
-    };
-    const safe = safeSelf();
-    const args = [ 'readystatechange', onStateChange, { capture: true } ];
-    safe.addEventListener.apply(document, args);
+    context[prop] = new Proxy(fn, {
+        apply: handler,
+        get(target, prop, receiver) {
+            if ( prop === 'toString' ) { return toString; }
+            return Reflect.get(target, prop, receiver);
+        },
+    });
+    return (...args) => Reflect.apply(...args);
 }
 
 function safeSelf() {
@@ -319,6 +250,12 @@ function safeSelf() {
             }
             return self.requestAnimationFrame(fn);
         },
+        offIdle(id) {
+            if ( self.requestIdleCallback ) {
+                return self.cancelIdleCallback(id);
+            }
+            return self.cancelAnimationFrame(id);
+        }
     };
     scriptletGlobals.safeSelf = safe;
     if ( scriptletGlobals.bcSecret === undefined ) { return safe; }
@@ -359,7 +296,19 @@ function safeSelf() {
 /******************************************************************************/
 
 const hnParts = [];
-try { hnParts.push(...document.location.hostname.split('.')); }
+try {
+    let origin = document.location.origin;
+    if ( origin === 'null' ) {
+        const origins = document.location.ancestorOrigins;
+        for ( let i = 0; i < origins.length; i++ ) {
+            origin = origins[i];
+            if ( origin !== 'null' ) { break; }
+        }
+    }
+    const pos = origin.lastIndexOf('://');
+    if ( pos === -1 ) { return; }
+    hnParts.push(...origin.slice(pos+3).split('.'));
+}
 catch(ex) { }
 const hnpartslen = hnParts.length;
 if ( hnpartslen === 0 ) { return; }
@@ -416,7 +365,7 @@ if ( entitiesMap.size !== 0 ) {
 
 // Apply scriplets
 for ( const i of todoIndices ) {
-    try { removeNodeText(...argsList[i]); }
+    try { noSetTimeoutIf(...argsList[i]); }
     catch(ex) {}
 }
 argsList.length = 0;
@@ -434,11 +383,11 @@ argsList.length = 0;
 //   'MAIN' world not yet supported in Firefox, so we inject the code into
 //   'MAIN' ourself when environment in Firefox.
 
-const targetWorld = 'ISOLATED';
+const targetWorld = 'MAIN';
 
 // Not Firefox
 if ( typeof wrappedJSObject !== 'object' || targetWorld === 'ISOLATED' ) {
-    return uBOL_removeNodeText();
+    return uBOL_noSetTimeoutIf();
 }
 
 // Firefox
@@ -446,11 +395,11 @@ if ( typeof wrappedJSObject !== 'object' || targetWorld === 'ISOLATED' ) {
     const page = self.wrappedJSObject;
     let script, url;
     try {
-        page.uBOL_removeNodeText = cloneInto([
-            [ '(', uBOL_removeNodeText.toString(), ')();' ],
+        page.uBOL_noSetTimeoutIf = cloneInto([
+            [ '(', uBOL_noSetTimeoutIf.toString(), ')();' ],
             { type: 'text/javascript; charset=utf-8' },
         ], self);
-        const blob = new page.Blob(...page.uBOL_removeNodeText);
+        const blob = new page.Blob(...page.uBOL_noSetTimeoutIf);
         url = page.URL.createObjectURL(blob);
         const doc = page.document;
         script = doc.createElement('script');
@@ -464,7 +413,7 @@ if ( typeof wrappedJSObject !== 'object' || targetWorld === 'ISOLATED' ) {
         if ( script ) { script.remove(); }
         page.URL.revokeObjectURL(url);
     }
-    delete page.uBOL_removeNodeText;
+    delete page.uBOL_noSetTimeoutIf;
 }
 
 /******************************************************************************/

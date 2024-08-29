@@ -20,10 +20,8 @@
 
 */
 
-/* jshint esversion:11 */
+/* eslint-disable indent */
 /* global cloneInto */
-
-'use strict';
 
 // ruleset: kor-1
 
@@ -40,11 +38,11 @@
 // Start of code to inject
 const uBOL_noFetchIf = function() {
 
-const scriptletGlobals = {}; // jshint ignore: line
+const scriptletGlobals = {}; // eslint-disable-line
 
-const argsList = [["/^https.\\/\\/videoads\\.kakao\\.com\\/adserver\\/api\\/v[0-9]{1","2}\\/vmap$/"],["imasdk.googleapis.com/js/sdkloader/ima3.js"],["pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"],["doubleclick.net"],["www3.doubleclick.net"]];
+const argsList = [["/^https.\\/\\/videoads\\.kakao\\.com\\/adserver\\/api\\/v[0-9]{1","2}\\/vmap$/"],["imasdk.googleapis.com/js/sdkloader/ima3.js"],["pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"],["adblockanalytics.com"],["adsbygoogle.js"],["doubleclick.net"],["www3.doubleclick.net"]];
 
-const hostnamesMap = new Map([["tv.kakao.com",0],["play-tv.kakao.com",0],["kakaotv.daum.net",0],["spotvnow.co.kr",[1,2]],["srank.kr",3],["blackkiwi.net",4]]);
+const hostnamesMap = new Map([["tv.kakao.com",0],["play-tv.kakao.com",0],["kakaotv.daum.net",0],["spotvnow.co.kr",[1,2]],["hub.weirdhost.xyz",[3,4]],["srank.kr",5],["blackkiwi.net",6]]);
 
 const entitiesMap = new Map([]);
 
@@ -327,6 +325,12 @@ function safeSelf() {
             }
             return self.requestAnimationFrame(fn);
         },
+        offIdle(id) {
+            if ( self.requestIdleCallback ) {
+                return self.cancelIdleCallback(id);
+            }
+            return self.cancelAnimationFrame(id);
+        }
     };
     scriptletGlobals.safeSelf = safe;
     if ( scriptletGlobals.bcSecret === undefined ) { return safe; }
@@ -367,7 +371,19 @@ function safeSelf() {
 /******************************************************************************/
 
 const hnParts = [];
-try { hnParts.push(...document.location.hostname.split('.')); }
+try {
+    let origin = document.location.origin;
+    if ( origin === 'null' ) {
+        const origins = document.location.ancestorOrigins;
+        for ( let i = 0; i < origins.length; i++ ) {
+            origin = origins[i];
+            if ( origin !== 'null' ) { break; }
+        }
+    }
+    const pos = origin.lastIndexOf('://');
+    if ( pos === -1 ) { return; }
+    hnParts.push(...origin.slice(pos+3).split('.'));
+}
 catch(ex) { }
 const hnpartslen = hnParts.length;
 if ( hnpartslen === 0 ) { return; }

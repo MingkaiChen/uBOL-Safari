@@ -15,7 +15,7 @@
   ],
   "urlFilter": "||pagead2.googlesyndication.com/pagead/js/adsbygoogle.js^"
  },
- "id": 202,
+ "id": 1,
  "priority": 2
 },
 {
@@ -34,7 +34,7 @@
   ],
   "urlFilter": "||pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
  },
- "id": 203,
+ "id": 2,
  "priority": 2
 },
 {
@@ -55,7 +55,7 @@
    "xmlhttprequest"
   ]
  },
- "id": 204,
+ "id": 3,
  "priority": 2
 }
 ]

@@ -20,10 +20,8 @@
 
 */
 
-/* jshint esversion:11 */
+/* eslint-disable indent */
 /* global cloneInto */
-
-'use strict';
 
 // ruleset: irn-0
 
@@ -40,11 +38,11 @@
 // Start of code to inject
 const uBOL_jsonPrune = function() {
 
-const scriptletGlobals = {}; // jshint ignore: line
+const scriptletGlobals = {}; // eslint-disable-line
 
-const argsList = [["data.intrack"],["trace data.vast_url data.ads"],["result.commercialUrl result.watermark"],["result.adsText result.adsLink"],["data","data.vast data.content data.ad_id"],["body.productStatus"]];
+const argsList = [["trace data.vast_url data.ads"],["result.commercialUrl result.watermark"],["result.adsText result.adsLink"],["data","data.vast data.content data.ad_id"],["body.productStatus"]];
 
-const hostnamesMap = new Map([["digikala.com",0],["filmnet.ir",1],["play.namava.ir",2],["skyroom.online",3],["tmk.ir",4],["player.telewebion.com",5]]);
+const hostnamesMap = new Map([["filmnet.ir",0],["play.namava.ir",1],["skyroom.online",2],["tmk.ir",3],["player.telewebion.com",4]]);
 
 const entitiesMap = new Map([]);
 
@@ -247,6 +245,12 @@ function safeSelf() {
             }
             return self.requestAnimationFrame(fn);
         },
+        offIdle(id) {
+            if ( self.requestIdleCallback ) {
+                return self.cancelIdleCallback(id);
+            }
+            return self.cancelAnimationFrame(id);
+        }
     };
     scriptletGlobals.safeSelf = safe;
     if ( scriptletGlobals.bcSecret === undefined ) { return safe; }
@@ -414,7 +418,19 @@ function getRandomToken() {
 /******************************************************************************/
 
 const hnParts = [];
-try { hnParts.push(...document.location.hostname.split('.')); }
+try {
+    let origin = document.location.origin;
+    if ( origin === 'null' ) {
+        const origins = document.location.ancestorOrigins;
+        for ( let i = 0; i < origins.length; i++ ) {
+            origin = origins[i];
+            if ( origin !== 'null' ) { break; }
+        }
+    }
+    const pos = origin.lastIndexOf('://');
+    if ( pos === -1 ) { return; }
+    hnParts.push(...origin.slice(pos+3).split('.'));
+}
 catch(ex) { }
 const hnpartslen = hnParts.length;
 if ( hnpartslen === 0 ) { return; }
